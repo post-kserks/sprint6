@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/Yandex-Practicum/go1fl-sprint6-final/internal/service"
@@ -73,18 +74,15 @@ func (h *Handler) UploadHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Определяем тип контента по расширению файла
-	ext := filepath.Ext(header.Filename)
+	// Определяем тип контента по содержимому файла
+	contentStr := string(content)
 	var result string
 	var convertErr error
 
-	if ext == ".txt" {
-		result, convertErr = service.ConvertText(string(content))
-	} else if ext == ".morse" {
-		result, convertErr = service.ConvertMorse(string(content))
+	if isMorseCode(contentStr) {
+		result, convertErr = service.ConvertMorse(contentStr)
 	} else {
-		http.Error(w, "Unsupported file type", http.StatusBadRequest)
-		return
+		result, convertErr = service.ConvertText(contentStr)
 	}
 
 	if convertErr != nil {
@@ -93,6 +91,8 @@ func (h *Handler) UploadHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Сохраняем результат с тем же расширением, что и входной файл
+	ext := filepath.Ext(header.Filename)
 	outputFilename := fmt.Sprintf("result_%s%s", time.Now().UTC().String(), ext)
 	err = os.WriteFile(outputFilename, []byte(result), 0644)
 	if err != nil {
@@ -104,4 +104,15 @@ func (h *Handler) UploadHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(result))
+}
+
+// isMorseCode проверяет, является ли строка кодом Морзе
+func isMorseCode(input string) bool {
+	cleanInput := strings.ReplaceAll(input, " ", "")
+	for _, char := range cleanInput {
+		if char != '.' && char != '-' {
+			return false
+		}
+	}
+	return true
 }
