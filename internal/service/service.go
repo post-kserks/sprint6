@@ -4,7 +4,7 @@ import (
 	"errors"
 	"strings"
 
-	"morse-converter/pkg/morse"
+	"github.com/Yandex-Practicum/go1fl-sprint6-final/pkg/morse"
 )
 
 var (
@@ -23,6 +23,21 @@ func ConvertText(input string) (string, error) {
 		return result, nil
 	}
 	result := morse.ToMorse(input)
+	return result, nil
+}
+
+func ConvertMorse(input string) (string, error) {
+	if input == "" {
+		return "", ErrEmptyInput
+	}
+
+	input = strings.TrimSpace(input)
+
+	if !isMorseCode(input) {
+		return "", errors.New("invalid morse code input")
+	}
+
+	result := morse.ToText(input)
 	return result, nil
 }
 

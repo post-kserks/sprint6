@@ -1,3 +1,3 @@
-module morse-converter
+module github.com/Yandex-Practicum/go1fl-sprint6-final
 
-go 1.21
+go 1.24.0

@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"morse-converter/internal/service"
+	"github.com/Yandex-Practicum/go1fl-sprint6-final/internal/service"
 )
 
 type Handler struct {
@@ -58,7 +58,7 @@ func (h *Handler) UploadHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	file, header, err := r.FormFile("file")
+	file, header, err := r.FormFile("myFile")
 	if err != nil {
 		h.logger.Printf("Error getting file: %v", err)
 		http.Error(w, "Error getting file", http.StatusInternalServerError)
@@ -73,16 +73,27 @@ func (h *Handler) UploadHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	result, err := service.ConvertText(string(content))
-	if err != nil {
-		h.logger.Printf("Error converting text: %v", err)
-		http.Error(w, "Error converting text", http.StatusInternalServerError)
+	// Определяем тип контента по расширению файла
+	ext := filepath.Ext(header.Filename)
+	var result string
+	var convertErr error
+
+	if ext == ".txt" {
+		result, convertErr = service.ConvertText(string(content))
+	} else if ext == ".morse" {
+		result, convertErr = service.ConvertMorse(string(content))
+	} else {
+		http.Error(w, "Unsupported file type", http.StatusBadRequest)
 		return
 	}
 
-	ext := filepath.Ext(header.Filename)
-	outputFilename := fmt.Sprintf("result_%s%s", time.Now().UTC().String(), ext)
+	if convertErr != nil {
+		h.logger.Printf("Error converting content: %v", convertErr)
+		http.Error(w, "Error converting content", http.StatusInternalServerError)
+		return
+	}
 
+	outputFilename := fmt.Sprintf("result_%s%s", time.Now().UTC().String(), ext)
 	err = os.WriteFile(outputFilename, []byte(result), 0644)
 	if err != nil {
 		h.logger.Printf("Error writing result file: %v", err)
@@ -91,5 +102,6 @@ func (h *Handler) UploadHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(result))
 }
