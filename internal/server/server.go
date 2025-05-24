@@ -1,1 +1,44 @@
 package server
+
+import (
+	"log"
+	"net/http"
+	"time"
+
+	"morse-converter/internal/handlers"
+)
+
+type Server struct {
+	logger *log.Logger
+	server *http.Server
+}
+
+func New(logger *log.Logger) *Server {
+
+	mux := http.NewServeMux()
+
+	h := handlers.NewHandler(logger)
+
+	mux.HandleFunc("/", h.IndexHandler)
+	mux.HandleFunc("/upload", h.UploadHandler)
+
+
+	srv := &http.Server{
+		Addr:         ":8080",
+		Handler:      mux,
+		ErrorLog:     logger,
+		ReadTimeout:  5 * time.Second,
+		WriteTimeout: 10 * time.Second,
+		IdleTimeout:  15 * time.Second,
+	}
+
+	return &Server{
+		logger: logger,
+		server: srv,
+	}
+}
+
+func (s *Server) Start() error {
+	s.logger.Printf("Starting server on %s", s.server.Addr)
+	return s.server.ListenAndServe()
+}
