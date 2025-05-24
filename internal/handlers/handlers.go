@@ -52,6 +52,12 @@ func (h *Handler) UploadHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if err := r.ParseMultipartForm(10 << 20); err != nil {
+		h.logger.Printf("Error parsing form: %v", err)
+		http.Error(w, "Error parsing form", http.StatusInternalServerError)
+		return
+	}
+
 	file, header, err := r.FormFile("file")
 	if err != nil {
 		h.logger.Printf("Error getting file: %v", err)
